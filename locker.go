@@ -147,12 +147,11 @@ func (locker *DynamoDBLocker) UnlockUpload(id string) error {
 		return err
 	}
 
+	defer delete(locker.locks, id)
 	// if success == false, then someone else already stole the lock
 	if !success {
 		return ErrLockNotHeld
 	}
-
-	defer delete(locker.locks, id)
 	return nil
 }
 
