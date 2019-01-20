@@ -2,6 +2,10 @@
 //
 // To initialize a locker, a pre-existing connected DynamoDB client must be present
 //
+//	import (
+//		dynamolocker "github.com/chen-anders/tusd-dynamo-locker"
+//	)
+//
 //	dynamoDBClient := dynamodb.New(session.New(), &aws.Config{
 //		Region:   aws.String("us-west-2"),
 //	})
@@ -36,7 +40,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chen-anders/dynamolock"
+	"cirello.io/dynamolock"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tus/tusd"
 )

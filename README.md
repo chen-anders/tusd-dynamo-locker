@@ -1,3 +1,5 @@
+# tusd-dynamo-locker
+
 [![Build Status](https://travis-ci.com/chen-anders/tusd-dynamo-locker.svg?branch=master)](https://travis-ci.com/chen-anders/tusd-dynamo-locker)
 
 [Godoc](https://godoc.org/github.com/chen-anders/tusd-dynamo-locker)
@@ -31,6 +33,12 @@ Usage of ./setup:
 
 To initialize a locker, a pre-existing connected DynamoDB client must be present.
 ```
+import (
+  dynamolocker "github.com/chen-anders/tusd-dynamo-locker"
+)
+
+...
+
 sess := session.Must(session.NewSession(&aws.Config{
   Region: aws.String("us-east-1"),
 }))
