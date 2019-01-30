@@ -1,7 +1,7 @@
 module github.com/chen-anders/tusd-dynamo-locker
 
 require (
-	cirello.io/dynamolock v0.0.0-20190118165249-27562653de1c
+	cirello.io/dynamolock v1.0.0
 	github.com/aws/aws-sdk-go v1.16.21
 	github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40 // indirect
 	github.com/golang/mock v1.2.0 // indirect
