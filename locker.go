@@ -163,7 +163,7 @@ func (locker *DynamoDBLocker) UnlockUpload(id string) error {
 func (locker *DynamoDBLocker) Close() {
 	locker.mutex.Lock()
 	defer locker.mutex.Unlock()
-	for id, lock := range locker.locks {
+	for _, lock := range locker.locks {
 		locker.Client.ReleaseLock(lock, dynamolock.WithDeleteLock(true))
 	}
 	locker.locks = map[string]*dynamolock.Lock{}
