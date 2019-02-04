@@ -12,7 +12,7 @@ import (
 	"github.com/twinj/uuid"
 )
 
-func TestDyanmoLocker(t *testing.T) {
+func TestDynamoLocker(t *testing.T) {
 	a := assert.New(t)
 
 	sess, err := session.NewSession(&aws.Config{
