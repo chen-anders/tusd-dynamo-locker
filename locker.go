@@ -67,7 +67,7 @@ type DynamoDBLocker struct {
 // if a table does not already exist
 type DynamoDBTableOptions struct {
 	// If no ProvisionedThroughput is specified, we create a DynamoDB table with on-demand capacity
-	ProvisionedThroughput 		*dynamodb.ProvisionedThroughput
+	ProvisionedThroughput *dynamodb.ProvisionedThroughput
 }
 
 // New constructs a new locker using dynamolockerided client.
@@ -134,7 +134,7 @@ func (locker *DynamoDBLocker) LockUpload(id string) error {
 	return nil
 }
 
-// UnlockUpload releases a lock. If no such lock exists, no error will be returned.
+// UnlockUpload releases a lock.
 func (locker *DynamoDBLocker) UnlockUpload(id string) error {
 	locker.mutex.Lock()
 	defer locker.mutex.Unlock()
