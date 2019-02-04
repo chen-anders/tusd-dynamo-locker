@@ -165,7 +165,7 @@ func (locker *DynamoDBLocker) Close() {
 	defer locker.mutex.Unlock()
 	for id, lock := range locker.locks {
 		locker.Client.ReleaseLock(lock, dynamolock.WithDeleteLock(true))
-		delete(locker.locks, id)
 	}
+	locker.locks = map[string]*dynamolock.Lock{}
 	locker.Client.Close()
 }
