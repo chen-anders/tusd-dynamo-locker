@@ -37,6 +37,7 @@ package dynamolocker
 
 import (
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -123,6 +124,7 @@ func (locker *DynamoDBLocker) LockUpload(id string) error {
 		dynamolock.WithDeleteLockOnRelease(),
 	)
 	if err != nil {
+		log.Printf("Error locking file id: %s - error: %s", id, err.Error())
 		return tusd.ErrFileLocked
 	}
 
