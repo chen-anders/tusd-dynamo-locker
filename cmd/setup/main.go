@@ -13,8 +13,8 @@ import (
 func main() {
 	tableName := flag.String("table-name", "", "Required. DynamoDB Table Name")
 	region := flag.String("region", "us-east-1", "AWS Region")
-	readCapacityUnits := flag.Int64("read-capacity-units", 0, "DynamoDB Read Capacity Units for Provisioned Capacity")
-	writeCapacityUnits := flag.Int64("write-capacity-units", 0, "DynamoDB Write Capacity Units for Provisioned Capacity")
+	readCapacityUnits := flag.Int64("read-capacity-units", 0, "(optional) DynamoDB Read Capacity Units for Provisioned Capacity.")
+	writeCapacityUnits := flag.Int64("write-capacity-units", 0, "(optional) DynamoDB Write Capacity Units for Provisioned Capacity.")
 	flag.Parse()
 
 	if *tableName == "" {

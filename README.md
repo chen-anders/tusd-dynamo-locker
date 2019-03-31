@@ -19,15 +19,16 @@ go build -o setup cmd/setup/main.go
 ```
 Usage of ./setup:
   -read-capacity-units int
-      DynamoDB Read Capacity Units for Provisioned Capacity
+      (optional) DynamoDB Read Capacity Units for Provisioned Capacity
   -region string
       AWS Region (default "us-east-1")
   -table-name string
       DynamoDB Table Name
   -write-capacity-units int
-      DynamoDB Write Capacity Units for Provisioned Capacity
+      (optional) DynamoDB Write Capacity Units for Provisioned Capacity
 ```
 
+If `-read-capacity-units` and `-write-capacity-units` are not specified, a **Pay-Per-Request** DynamoDB table is provisioned.
 
 #### In your tusd server
 
