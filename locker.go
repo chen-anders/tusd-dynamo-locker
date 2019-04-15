@@ -119,8 +119,9 @@ func (locker *DynamoDBLocker) UseIn(composer *tusd.StoreComposer) {
 
 // LockUpload tries to obtain the exclusive lock.
 func (locker *DynamoDBLocker) LockUpload(id string) error {
+	refreshPeriod := time.Duration(locker.LeaseDuration / 10) * time.Millisecond
 	lock, err := locker.Client.AcquireLock(id,
-		dynamolock.FailIfLocked(),
+		dynamolock.WithRefreshPeriod(refreshPeriod),
 		dynamolock.WithDeleteLockOnRelease(),
 	)
 	if err != nil {

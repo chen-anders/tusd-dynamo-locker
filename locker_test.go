@@ -14,7 +14,7 @@ import (
 
 func TestDynamoLocker(t *testing.T) {
 	a := assert.New(t)
-
+	customLeaseDuration := int64(1000)
 	sess, err := session.NewSession(&aws.Config{
 		Region:   aws.String("us-west-2"),
 		Endpoint: aws.String("http://localhost:8000"),
@@ -24,7 +24,7 @@ func TestDynamoLocker(t *testing.T) {
 	}
 	dbSvc := dynamodb.New(sess)
 	tableName := uuid.NewV4().String()
-	locker, err := New(dbSvc, tableName)
+	locker, err := NewWithLeaseDuration(dbSvc, tableName, customLeaseDuration)
 	a.NoError(err)
 
 	dynamoDBTableOpts := &DynamoDBTableOptions{
@@ -37,12 +37,12 @@ func TestDynamoLocker(t *testing.T) {
 	_, err = locker.CreateDynamoDBTable(dynamoDBTableOpts)
 	a.NoError(err)
 
-	locker2, err := New(dbSvc, tableName)
+	locker2, err := NewWithLeaseDuration(dbSvc, tableName, customLeaseDuration)
 	a.NoError(err)
 
 	a.NoError(locker.LockUpload("one"))
 	a.Equal(tusd.ErrFileLocked, locker.LockUpload("one"))
-	time.Sleep(3 * time.Second)
+	time.Sleep(2 * time.Second)
 	// test that lock remains between heartbeats
 	a.Equal(tusd.ErrFileLocked, locker.LockUpload("one"))
 	// test that the lock cannot be taken by a second client
