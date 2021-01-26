@@ -4,12 +4,13 @@ import (
 	"testing"
 	"time"
 
+	tusd "github.com/tus/tusd/pkg/handler"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/tus/tusd"
 )
 
 func TestDynamoLocker(t *testing.T) {
@@ -40,17 +41,21 @@ func TestDynamoLocker(t *testing.T) {
 	locker2, err := NewWithLeaseDuration(dbSvc, tableName, customLeaseDuration)
 	a.NoError(err)
 
-	a.NoError(locker.LockUpload("one"))
-	a.Equal(tusd.ErrFileLocked, locker.LockUpload("one"))
+	l, err := locker.NewLock("one")
+	a.NoError(err)
+	a.NoError(l.Lock())
+	a.Equal(tusd.ErrFileLocked, l.Lock())
 	time.Sleep(2 * time.Second)
 	// test that lock remains between heartbeats
-	a.Equal(tusd.ErrFileLocked, locker.LockUpload("one"))
+	a.Equal(tusd.ErrFileLocked, l.Lock())
 	// test that the lock cannot be taken by a second client
-	a.Equal(tusd.ErrFileLocked, locker2.LockUpload("one"))
-	a.NoError(locker.UnlockUpload("one"))
-	a.Equal(ErrLockNotHeld, locker.UnlockUpload("one"))
-	a.NoError(locker2.LockUpload("one"))
-	a.Equal(tusd.ErrFileLocked, locker2.LockUpload("one"))
-	a.NoError(locker2.UnlockUpload("one"))
-	a.Equal(ErrLockNotHeld, locker2.UnlockUpload("one"))
+	l2, err := locker2.NewLock("one")
+	a.NoError(err)
+	a.Equal(tusd.ErrFileLocked, l2.Lock())
+	a.NoError(l.Unlock())
+	a.Equal(ErrLockNotHeld, l.Unlock())
+	a.NoError(l2.Lock())
+	a.Equal(tusd.ErrFileLocked, l2.Lock())
+	a.NoError(l2.Unlock())
+	a.Equal(ErrLockNotHeld, l2.Unlock())
 }
