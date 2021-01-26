@@ -13,7 +13,6 @@ services:
   - docker
 
 before_install:
-  - go get github.com/mattn/goveralls
   - go mod download
 
 install: true
