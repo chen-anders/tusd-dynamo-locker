@@ -46,10 +46,10 @@ import (
 	tusd "github.com/tus/tusd/pkg/handler"
 )
 
-const DEFAULT_LEASE_DURATION_MILLISECONDS = int64(60000)
+const DefaultLeaseDurationMilliseconds = int64(60000)
 
 var (
-	ErrLockNotHeld = errors.New("Lock not held")
+	ErrLockNotHeld = errors.New("lock not held")
 )
 
 type DynamoDBLocker struct {
@@ -73,7 +73,7 @@ type DynamoDBTableOptions struct {
 
 // New constructs a new locker using dynamolockerided client.
 func New(client *dynamodb.DynamoDB, tableName string) (*DynamoDBLocker, error) {
-	return NewWithLeaseDuration(client, tableName, DEFAULT_LEASE_DURATION_MILLISECONDS)
+	return NewWithLeaseDuration(client, tableName, DefaultLeaseDurationMilliseconds)
 }
 
 // This method may be used if a custom lease duration is required
