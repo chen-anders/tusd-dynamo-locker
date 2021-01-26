@@ -43,7 +43,7 @@ import (
 
 	"cirello.io/dynamolock"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/tus/tusd"
+	tusd "github.com/tus/tusd/pkg/handler"
 )
 
 const DEFAULT_LEASE_DURATION_MILLISECONDS = int64(60000)
@@ -117,51 +117,6 @@ func (locker *DynamoDBLocker) UseIn(composer *tusd.StoreComposer) {
 	composer.UseLocker(locker)
 }
 
-// LockUpload tries to obtain the exclusive lock.
-func (locker *DynamoDBLocker) LockUpload(id string) error {
-	refreshPeriod := time.Duration(locker.LeaseDuration / 10) * time.Millisecond
-	lock, err := locker.Client.AcquireLock(id,
-		dynamolock.WithRefreshPeriod(refreshPeriod),
-		dynamolock.WithDeleteLockOnRelease(),
-	)
-	if err != nil {
-		log.Printf("Error locking file id: %s - error: %s", id, err.Error())
-		return tusd.ErrFileLocked
-	}
-
-	locker.mutex.Lock()
-	defer locker.mutex.Unlock()
-	// Only add the lock to our list if the acquire was successful and no error appeared.
-	locker.locks[id] = lock
-
-	return nil
-}
-
-// UnlockUpload releases a lock.
-func (locker *DynamoDBLocker) UnlockUpload(id string) error {
-	locker.mutex.Lock()
-	defer locker.mutex.Unlock()
-
-	// Complain if no lock has been found. This can only happen if LockUpload
-	// has not been invoked before or UnlockUpload multiple times.
-	lock, ok := locker.locks[id]
-	if !ok {
-		return ErrLockNotHeld
-	}
-
-	success, err := locker.Client.ReleaseLock(lock, dynamolock.WithDeleteLock(true))
-	if err != nil {
-		return err
-	}
-
-	defer delete(locker.locks, id)
-	// if success == false, then someone else already stole the lock
-	if !success {
-		return ErrLockNotHeld
-	}
-	return nil
-}
-
 // Close releases all the locks
 func (locker *DynamoDBLocker) Close() {
 	locker.mutex.Lock()
@@ -171,4 +126,61 @@ func (locker *DynamoDBLocker) Close() {
 	}
 	locker.locks = map[string]*dynamolock.Lock{}
 	locker.Client.Close()
+}
+
+func (locker *DynamoDBLocker) NewLock(id string) (tusd.Lock, error) {
+	return &Lock{
+		locker,
+		id,
+	}, nil
+}
+
+type Lock struct {
+	locker *DynamoDBLocker
+	id string
+}
+
+// Lock tries to obtain the exclusive lock.
+func (lock Lock) Lock() error {
+	refreshPeriod := time.Duration(lock.locker.LeaseDuration / 10) * time.Millisecond
+	acquiredLock, err := lock.locker.Client.AcquireLock(lock.id,
+		dynamolock.WithRefreshPeriod(refreshPeriod),
+		dynamolock.WithDeleteLockOnRelease(),
+	)
+	if err != nil {
+		log.Printf("Error locking file id: %s - error: %s", lock.id, err.Error())
+		return tusd.ErrFileLocked
+	}
+
+	lock.locker.mutex.Lock()
+	defer lock.locker.mutex.Unlock()
+	// Only add the acquiredLock to our list if the acquire was successful and no error appeared.
+	lock.locker.locks[lock.id] = acquiredLock
+
+	return nil
+}
+
+// Unlock releases the lock.
+func (lock Lock) Unlock() error {
+	lock.locker.mutex.Lock()
+	defer lock.locker.mutex.Unlock()
+
+	// Complain if no lock has been found. This can only happen if Lock()
+	// has not been invoked before or Unlock() multiple times.
+	acquiredLock, ok := lock.locker.locks[lock.id]
+	if !ok {
+		return ErrLockNotHeld
+	}
+
+	success, err := lock.locker.Client.ReleaseLock(acquiredLock, dynamolock.WithDeleteLock(true))
+	if err != nil {
+		return err
+	}
+
+	defer delete(lock.locker.locks, lock.id)
+	// if success == false, then someone else already stole the lock
+	if !success {
+		return ErrLockNotHeld
+	}
+	return nil
 }
