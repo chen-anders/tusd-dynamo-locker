@@ -7,9 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/tus/tusd"
-	"github.com/twinj/uuid"
 )
 
 func TestDynamoLocker(t *testing.T) {
@@ -23,7 +23,7 @@ func TestDynamoLocker(t *testing.T) {
 		t.Fatalf("failed to connect to local dynamoDB: %v", err)
 	}
 	dbSvc := dynamodb.New(sess)
-	tableName := uuid.NewV4().String()
+	tableName := uuid.New().String()
 	locker, err := NewWithLeaseDuration(dbSvc, tableName, customLeaseDuration)
 	a.NoError(err)
 
