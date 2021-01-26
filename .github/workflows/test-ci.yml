@@ -1,0 +1,30 @@
+name: Test
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.15', '1.14', '1.13', '1.12']
+    name: Go ${{ matrix.go }}
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Download gomodules
+        run: go mod download
+      - name: Run tests
+        run: go test -v ./...
+        env:
+          AWS_ACCESS_KEY_ID: AKID
+          AWS_SECRET_ACCESS_KEY: SECRET
+
