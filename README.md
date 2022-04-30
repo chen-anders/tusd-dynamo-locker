@@ -43,7 +43,7 @@ sess := session.Must(session.NewSession(&aws.Config{
 }))
 
 dynamoDBClient := dynamodb.New(sess)
-locker, err := dynamolocker.New(dyanmoDBClient, "my-locker")
+locker, err := dynamolocker.New(dynamoDBClient, "my-locker")
 if err != nil {
   log.Fatal(err)
 }
