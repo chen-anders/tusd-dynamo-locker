@@ -38,11 +38,15 @@ import (
 
 ...
 
-sess := session.Must(session.NewSession(&aws.Config{
-  Region: aws.String("us-east-1"),
-}))
+cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithRegion("us-west-2"),
+)
 
-dynamoDBClient := dynamodb.New(sess)
+if err != nil {
+	t.Fatalf("failed to connect to local dynamoDB: %v", err)
+}
+dynamoDBClient := dynamodb.NewFromConfig(cfg)
 locker, err := dynamolocker.New(dynamoDBClient, "my-locker")
 if err != nil {
   log.Fatal(err)
