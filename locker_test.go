@@ -1,14 +1,16 @@
 package dynamolocker
 
 import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"testing"
 	"time"
 
 	tusd "github.com/tus/tusd/pkg/handler"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,29 +18,35 @@ import (
 func TestDynamoLocker(t *testing.T) {
 	a := assert.New(t)
 	customLeaseDuration := int64(1000)
-	sess, err := session.NewSession(&aws.Config{
-		Region:   aws.String("us-west-2"),
-		Endpoint: aws.String("http://localhost:8000"),
-	})
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithRegion("us-west-2"),
+		config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{URL: "http://localhost:8000"}, nil
+			})),
+	)
+
 	if err != nil {
 		t.Fatalf("failed to connect to local dynamoDB: %v", err)
 	}
-	dbSvc := dynamodb.New(sess)
+	dynamoDBClient := dynamodb.NewFromConfig(cfg)
 	tableName := uuid.New().String()
-	locker, err := NewWithLeaseDuration(dbSvc, tableName, customLeaseDuration)
+	locker, err := NewWithLeaseDuration(dynamoDBClient, tableName, customLeaseDuration)
 	a.NoError(err)
 
+	capacityUnits := int64(5)
 	dynamoDBTableOpts := &DynamoDBTableOptions{
-		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(5),
-			WriteCapacityUnits: aws.Int64(5),
+		ProvisionedThroughput: &types.ProvisionedThroughput{
+			ReadCapacityUnits:  &capacityUnits,
+			WriteCapacityUnits: &capacityUnits,
 		},
 	}
 
 	_, err = locker.CreateDynamoDBTable(dynamoDBTableOpts)
 	a.NoError(err)
 
-	locker2, err := NewWithLeaseDuration(dbSvc, tableName, customLeaseDuration)
+	locker2, err := NewWithLeaseDuration(dynamoDBClient, tableName, customLeaseDuration)
 	a.NoError(err)
 
 	l, err := locker.NewLock("one")

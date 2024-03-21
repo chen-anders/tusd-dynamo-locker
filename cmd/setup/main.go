@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	dynamolocker "github.com/chen-anders/tusd-dynamo-locker"
 	"log"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	dynamolocker "github.com/chen-anders/tusd-dynamo-locker"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 func main() {
@@ -21,11 +22,14 @@ func main() {
 		log.Fatalln("Table name is required!")
 	}
 
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(*region),
-	}))
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(*region),
+	)
+	if err != nil {
+		log.Fatalf("Error intializing aws config: %v \n", err.Error())
+	}
 
-	dynamoDBClient := dynamodb.New(sess)
+	dynamoDBClient := dynamodb.NewFromConfig(cfg)
 	locker, err := dynamolocker.New(dynamoDBClient, *tableName)
 	if err != nil {
 		log.Fatalf("Error intializing locker: %v \n", err.Error())
@@ -38,9 +42,9 @@ func main() {
 		if *readCapacityUnits == 0 || *writeCapacityUnits == 0 {
 			log.Fatalln("For provisioned capacity, both read/write capacity units should be over 0.")
 		}
-		tableOpts.ProvisionedThroughput = &dynamodb.ProvisionedThroughput{
-			ReadCapacityUnits:  aws.Int64(*readCapacityUnits),
-			WriteCapacityUnits: aws.Int64(*writeCapacityUnits),
+		tableOpts.ProvisionedThroughput = &types.ProvisionedThroughput{
+			ReadCapacityUnits:  readCapacityUnits,
+			WriteCapacityUnits: writeCapacityUnits,
 		}
 	}
 
