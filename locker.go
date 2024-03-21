@@ -42,6 +42,7 @@
 package dynamolocker
 
 import (
+	"context"
 	"errors"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"log"
@@ -50,7 +51,7 @@ import (
 
 	"cirello.io/dynamolock/v2"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	tusd "github.com/tus/tusd/pkg/handler"
+	tusd "github.com/tus/tusd/v2/pkg/handler"
 )
 
 const DefaultLeaseDurationMilliseconds = int64(60000)
@@ -148,7 +149,7 @@ type Lock struct {
 }
 
 // Lock tries to obtain the exclusive lock.
-func (lock Lock) Lock() error {
+func (lock Lock) Lock(ctx context.Context, requestUnlock func()) error {
 	refreshPeriod := time.Duration(lock.locker.LeaseDuration/10) * time.Millisecond
 	acquiredLock, err := lock.locker.Client.AcquireLock(lock.id,
 		dynamolock.WithRefreshPeriod(refreshPeriod),

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	tusd "github.com/tus/tusd/pkg/handler"
+	tusd "github.com/tus/tusd/v2/pkg/handler"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -51,19 +51,19 @@ func TestDynamoLocker(t *testing.T) {
 
 	l, err := locker.NewLock("one")
 	a.NoError(err)
-	a.NoError(l.Lock())
-	a.Equal(tusd.ErrFileLocked, l.Lock())
+	a.NoError(l.Lock(context.TODO(), func() {}))
+	a.Equal(tusd.ErrFileLocked, l.Lock(context.TODO(), func() {}))
 	time.Sleep(2 * time.Second)
 	// test that lock remains between heartbeats
-	a.Equal(tusd.ErrFileLocked, l.Lock())
+	a.Equal(tusd.ErrFileLocked, l.Lock(context.TODO(), func() {}))
 	// test that the lock cannot be taken by a second client
 	l2, err := locker2.NewLock("one")
 	a.NoError(err)
-	a.Equal(tusd.ErrFileLocked, l2.Lock())
+	a.Equal(tusd.ErrFileLocked, l2.Lock(context.TODO(), func() {}))
 	a.NoError(l.Unlock())
 	a.Equal(ErrLockNotHeld, l.Unlock())
-	a.NoError(l2.Lock())
-	a.Equal(tusd.ErrFileLocked, l2.Lock())
+	a.NoError(l2.Lock(context.TODO(), func() {}))
+	a.Equal(tusd.ErrFileLocked, l2.Lock(context.TODO(), func() {}))
 	a.NoError(l2.Unlock())
 	a.Equal(ErrLockNotHeld, l2.Unlock())
 }
