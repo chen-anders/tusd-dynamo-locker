@@ -6,11 +6,16 @@
 //		dynamolocker "github.com/chen-anders/tusd-dynamo-locker"
 //	)
 //
-//	dynamoDBClient := dynamodb.New(session.New(), &aws.Config{
-//		Region:   aws.String("us-west-2"),
-//	})
-//
-//	locker, err := dynamolocker.New(dyanmoDBClient, "my-locker")
+//	 cfg, err := config.LoadDefaultConfig(
+//				context.TODO(),
+//				config.WithRegion("us-west-2"),
+//				config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
+//					func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+//						return aws.Endpoint{URL: "http://localhost:8000"}, nil
+//					})),
+//		)
+//	dynamoDBClient := dynamodb.NewFromConfig(cfg)
+//	locker, err := dynamolocker.New(dynamoDBClient, "my-locker")
 //	if err != nil {
 //		log.Fatal(err)
 //	}
@@ -23,26 +28,28 @@
 // A custom lease duration (in milliseconds) can be specified using
 // dynamolocker.NewWithLeaseDuration:
 //
-//	dynamoDBClient := dynamodb.New(session.New(), &aws.Config{
-//		Region:   aws.String("us-west-2"),
-//	})
+//	cfg, err := config.LoadDefaultConfig(
+//				context.TODO(),
+//				config.WithRegion("us-west-2"),
+//		)
+//	dynamoDBClient := dynamodb.NewFromConfig(cfg)
 //
 //	thirtySeconds := int64(30000)
 //	locker, err := dynamolocker.NewWithLeaseDuration(dyanmoDBClient, "my-locker", thirtySeconds)
 //	if err != nil {
 //		log.Fatal(err)
 //	}
-//
 package dynamolocker
 
 import (
 	"errors"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"log"
 	"sync"
 	"time"
 
-	"cirello.io/dynamolock"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"cirello.io/dynamolock/v2"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	tusd "github.com/tus/tusd/pkg/handler"
 )
 
@@ -57,7 +64,7 @@ type DynamoDBLocker struct {
 
 	// locks is used for storing dynamo locks before they are
 	// unlocked. If you want to release a lock, you need the same locker
-	// instance and therefore we need to save them temporarily.
+	// instance, and therefore we need to save them temporarily.
 	locks         map[string]*dynamolock.Lock
 	mutex         sync.Mutex
 	LeaseDuration int64
@@ -68,16 +75,16 @@ type DynamoDBLocker struct {
 // if a table does not already exist
 type DynamoDBTableOptions struct {
 	// If no ProvisionedThroughput is specified, we create a DynamoDB table with on-demand capacity
-	ProvisionedThroughput *dynamodb.ProvisionedThroughput
+	ProvisionedThroughput *types.ProvisionedThroughput
 }
 
 // New constructs a new locker using dynamolockerided client.
-func New(client *dynamodb.DynamoDB, tableName string) (*DynamoDBLocker, error) {
+func New(client *dynamodb.Client, tableName string) (*DynamoDBLocker, error) {
 	return NewWithLeaseDuration(client, tableName, DefaultLeaseDurationMilliseconds)
 }
 
 // This method may be used if a custom lease duration is required
-func NewWithLeaseDuration(client *dynamodb.DynamoDB, tableName string, leaseDuration int64) (*DynamoDBLocker, error) {
+func NewWithLeaseDuration(client *dynamodb.Client, tableName string, leaseDuration int64) (*DynamoDBLocker, error) {
 	dynamolockClient, err := dynamolock.New(
 		client,
 		tableName,
@@ -137,12 +144,12 @@ func (locker *DynamoDBLocker) NewLock(id string) (tusd.Lock, error) {
 
 type Lock struct {
 	locker *DynamoDBLocker
-	id string
+	id     string
 }
 
 // Lock tries to obtain the exclusive lock.
 func (lock Lock) Lock() error {
-	refreshPeriod := time.Duration(lock.locker.LeaseDuration / 10) * time.Millisecond
+	refreshPeriod := time.Duration(lock.locker.LeaseDuration/10) * time.Millisecond
 	acquiredLock, err := lock.locker.Client.AcquireLock(lock.id,
 		dynamolock.WithRefreshPeriod(refreshPeriod),
 		dynamolock.WithDeleteLockOnRelease(),

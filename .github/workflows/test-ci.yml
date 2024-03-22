@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ['1.15', '1.14', '1.13', '1.12']
+        go: ['1.21', '1.22']
     name: Go ${{ matrix.go }}
     services:
       dynamodb:
@@ -15,9 +15,9 @@ jobs:
         ports:
           - 8000:8000
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
       - name: Download gomodules
